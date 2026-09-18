@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0a0d18" />
+  <meta name="description" content="星轨抽卡实验室：支持稀有度、保底、抽卡动画和历史记录的网页版 AI 抽卡模拟器。" />
+  <title>星轨抽卡实验室 · AI 抽卡模拟器</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%230a0d18'/%3E%3Cpath d='M32 11l5.6 14.4L52 31l-14.4 5.6L32 51l-5.6-14.4L12 31l14.4-5.6z' fill='%23f7c96b'/%3E%3Ccircle cx='48' cy='15' r='3' fill='%23f27467'/%3E%3C/svg%3E" />
+  <style>
+    :root {
+      --bg: #080b14;
+      --panel: rgba(17, 22, 38, 0.78);
+      --panel-solid: #111626;
+      --panel-soft: rgba(255,255,255,.045);
+      --line: rgba(218, 226, 255, .12);
+      --text: #f3f4fb;
+      --muted: #9ba3ba;
+      --muted-strong: #c8cede;
+      --gold: #f6c96a;
+      --gold-strong: #ffdd8b;
+      --coral: #f17b70;
+      --cyan: #6bd8e7;
+      --violet: #b29bf8;
+      --shadow: 0 25px 80px rgba(0,0,0,.32);
+      --radius-lg: 28px;
+      --radius-md: 18px;
+      --radius-sm: 12px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 71% 4%, rgba(105, 86, 206, .2), transparent 30rem),
+        radial-gradient(circle at -5% 35%, rgba(71, 163, 190, .11), transparent 27rem),
+        var(--bg);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.5;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .22;
+      background-image: linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+      background-size: 36px 36px;
+      mask-image: linear-gradient(to bottom, black, transparent 90%);
+    }
+    button { font: inherit; }
+    button:focus-visible, a:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+    .shell { width: min(1240px, calc(100% - 48px)); margin: 0 auto; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; min-height: 80px; border-bottom: 1px solid var(--line); position: relative; z-index: 1; }
+    .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--text); }
+    .brand-mark { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid rgba(246,201,106,.6); color: var(--gold); border-radius: 11px; transform: rotate(45deg); background: rgba(246,201,106,.08); }
+    .brand-mark span { transform: rotate(-45deg); font-size: 16px; }
+    .brand-copy { display: grid; gap: 1px; }
+    .brand-copy strong { font-size: 15px; letter-spacing: .09em; }
+    .brand-copy small { color: var(--muted); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
+    .top-actions { display: flex; align-items: center; gap: 18px; }
+    .nav-link { color: var(--muted-strong); text-decoration: none; font-size: 14px; }
+    .nav-link:hover { color: var(--gold-strong); }
+    .balance-wrap { display: flex; align-items: center; gap: 8px; }
+    .balance { display: flex; align-items: center; gap: 9px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.04); font-size: 13px; }
+    .balance i { width: 8px; height: 8px; background: var(--gold); border-radius: 50%; box-shadow: 0 0 12px var(--gold); }
+    .recharge-btn { cursor: pointer; padding: 7px 10px; border: 1px solid rgba(246,201,106,.32); border-radius: 999px; color: var(--gold-strong); background: rgba(246,201,106,.08); font-size: 12px; font-weight: 700; transition: background .18s ease, transform .18s ease; }
+    .recharge-btn:hover { background: rgba(246,201,106,.16); transform: translateY(-1px); }
+    main { padding: 42px 0 72px; position: relative; z-index: 1; }
+    .eyebrow { display: flex; align-items: center; gap: 10px; color: var(--gold); font-size: 12px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
+    .eyebrow::before { content: ""; width: 30px; height: 1px; background: var(--gold); }
+    .intro { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 30px; }
+    h1, h2, p { margin: 0; }
+    h1 { max-width: 710px; margin-top: 12px; font-size: clamp(34px, 5vw, 62px); line-height: 1.02; letter-spacing: -.05em; font-weight: 760; }
+    h1 em { color: var(--gold-strong); font-style: normal; }
+    .intro-note { max-width: 300px; color: var(--muted); font-size: 14px; line-height: 1.7; }
+    .dashboard { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(300px, .9fr); gap: 18px; align-items: start; }
+    .panel { border: 1px solid var(--line); background: linear-gradient(145deg, rgba(22,27,47,.88), rgba(12,16,29,.78)); border-radius: var(--radius-lg); box-shadow: var(--shadow); }
+    .draw-panel { min-height: 560px; overflow: hidden; position: relative; }
+    .draw-panel::after { content: "AI / SIMULATION / 001"; position: absolute; right: 28px; top: 27px; color: rgba(255,255,255,.22); font-size: 10px; letter-spacing: .18em; }
+    .stage { min-height: 362px; position: relative; display: grid; place-items: center; overflow: hidden; border-bottom: 1px solid var(--line); background: radial-gradient(circle at 52% 47%, rgba(246,201,106,.08), transparent 19rem); }
+    .stage::before, .stage::after { content: ""; position: absolute; width: 470px; height: 470px; border: 1px solid rgba(246,201,106,.13); border-radius: 50%; transform: rotate(24deg); }
+    .stage::after { width: 350px; height: 350px; border-color: rgba(107,216,231,.12); transform: rotate(-31deg); }
+    .orbit { width: 285px; height: 285px; position: relative; border: 1px solid rgba(246,201,106,.52); border-radius: 50%; box-shadow: 0 0 70px rgba(246,201,106,.07), inset 0 0 40px rgba(246,201,106,.05); animation: drift 18s linear infinite; }
+    .orbit::before, .orbit::after { content: ""; position: absolute; inset: 18px; border: 1px dashed rgba(107,216,231,.45); border-radius: 50%; }
+    .orbit::after { inset: 53px; border-style: solid; border-color: rgba(241,123,112,.38); }
+    .orbit-dot { position: absolute; width: 7px; height: 7px; background: var(--gold); border-radius: 50%; box-shadow: 0 0 14px var(--gold); }
+    .dot-a { left: 21px; top: 118px; }.dot-b { right: 37px; top: 61px; background: var(--cyan); box-shadow: 0 0 14px var(--cyan); }.dot-c { bottom: 18px; left: 110px; background: var(--coral); box-shadow: 0 0 14px var(--coral); }
+    .sigil { position: absolute; z-index: 1; display: grid; place-items: center; width: 152px; height: 152px; border-radius: 45% 55% 53% 47% / 56% 41% 59% 44%; border: 1px solid rgba(255,221,139,.78); background: linear-gradient(135deg, rgba(246,201,106,.17), rgba(178,155,248,.1)); box-shadow: 0 0 50px rgba(246,201,106,.17), inset 0 0 45px rgba(246,201,106,.11); transform: rotate(18deg); }
+    .sigil::before { content: "✦"; transform: rotate(-18deg); font-size: 57px; color: var(--gold-strong); text-shadow: 0 0 22px rgba(255,221,139,.75); }
+    .stage-copy { position: absolute; bottom: 25px; left: 28px; z-index: 2; }
+    .stage-copy strong { display: block; color: var(--muted-strong); font-size: 13px; letter-spacing: .06em; }
+    .stage-copy span { color: var(--muted); font-size: 12px; }
+    .draw-controls { display: flex; justify-content: space-between; align-items: center; padding: 24px 28px 27px; gap: 22px; }
+    .draw-info { min-width: 0; }
+    .draw-info h2 { font-size: 21px; letter-spacing: -.02em; }
+    .draw-info p { margin-top: 5px; color: var(--muted); font-size: 13px; }
+    .actions { display: flex; gap: 10px; }
+    .draw-btn { cursor: pointer; min-width: 126px; padding: 13px 17px; border: 1px solid rgba(246,201,106,.5); border-radius: 13px; color: #1a1720; background: linear-gradient(135deg, var(--gold-strong), var(--gold)); font-size: 14px; font-weight: 800; box-shadow: 0 8px 26px rgba(246,201,106,.17); transition: transform .18s ease, filter .18s ease; }
+    .draw-btn:hover { transform: translateY(-2px); filter: brightness(1.08); }
+    .draw-btn:active { transform: translateY(0); }
+    .draw-btn.secondary { color: var(--text); border-color: rgba(255,255,255,.18); background: rgba(255,255,255,.07); box-shadow: none; }
+    .draw-btn:disabled { cursor: wait; opacity: .5; transform: none; }
+    .side-column { display: grid; gap: 18px; }
+    .stats-panel { padding: 25px; }
+    .panel-label { color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+    .pity-head { display: flex; justify-content: space-between; align-items: baseline; margin-top: 15px; }
+    .pity-number { font-size: 34px; line-height: 1; font-weight: 760; letter-spacing: -.05em; }
+    .pity-number span { color: var(--muted); font-size: 15px; font-weight: 500; letter-spacing: 0; }
+    .pity-status { color: var(--gold-strong); font-size: 12px; }
+    .progress-track { height: 8px; margin-top: 15px; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.08); }
+    .progress-value { width: 0%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--coral), var(--gold)); box-shadow: 0 0 18px rgba(246,201,106,.48); transition: width .35s ease; }
+    .stats-note { margin-top: 12px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+    .rate-list { display: grid; gap: 13px; margin-top: 22px; }
+    .rate-row { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+    .rarity-dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
+    .rarity-dot.ssr { background: var(--gold); box-shadow: 0 0 9px var(--gold); }.rarity-dot.sr { background: var(--violet); box-shadow: 0 0 9px var(--violet); }.rarity-dot.r { background: var(--cyan); box-shadow: 0 0 9px var(--cyan); }
+    .rate-row span:nth-child(2) { color: var(--muted-strong); }.rate-row strong { margin-left: auto; color: var(--text); font-size: 13px; }
+    .history-panel { margin-top: 18px; padding: 27px 28px 20px; }
+    .history-head { display: flex; align-items: end; justify-content: space-between; gap: 12px; }
+    .history-head h2 { font-size: 21px; letter-spacing: -.03em; }
+    .history-head p { color: var(--muted); font-size: 13px; margin-top: 4px; }
+    .clear-btn { cursor: pointer; color: var(--muted); padding: 7px 10px; border: 0; border-radius: 8px; background: transparent; font-size: 12px; }
+    .clear-btn:hover { color: var(--coral); background: rgba(241,123,112,.08); }
+    .history-table { width: 100%; margin-top: 21px; border-collapse: collapse; font-size: 13px; }
+    .history-table th { color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: .08em; text-align: left; text-transform: uppercase; padding: 0 12px 11px; }
+    .history-table th:first-child, .history-table td:first-child { padding-left: 0; }.history-table th:last-child, .history-table td:last-child { padding-right: 0; text-align: right; }
+    .history-table td { padding: 13px 12px; border-top: 1px solid rgba(218,226,255,.08); color: var(--muted-strong); }
+    .history-table tr:first-child td { border-top-color: rgba(246,201,106,.23); }.history-table tr:first-child td:first-child { color: var(--gold-strong); }
+    .result-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 7px; font-size: 12px; font-weight: 700; }.result-chip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .result-chip.ssr { color: var(--gold-strong); background: rgba(246,201,106,.1); }.result-chip.sr { color: var(--violet); background: rgba(178,155,248,.1); }.result-chip.r { color: var(--cyan); background: rgba(107,216,231,.1); }
+    .empty-state { padding: 30px 10px 19px; color: var(--muted); text-align: center; font-size: 13px; }
+    .empty-state strong { display: block; color: var(--muted-strong); margin-bottom: 5px; }
+    .footer { display: flex; justify-content: space-between; gap: 16px; margin-top: 24px; color: var(--muted); font-size: 12px; }
+    .toast { position: fixed; left: 50%; bottom: 25px; z-index: 10; padding: 11px 16px; border: 1px solid rgba(246,201,106,.32); border-radius: 999px; background: rgba(17,22,38,.94); color: var(--gold-strong); box-shadow: var(--shadow); transform: translate(-50%, 20px); opacity: 0; pointer-events: none; transition: opacity .25s ease, transform .25s ease; font-size: 13px; }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    .result-modal { position: fixed; inset: 0; z-index: 8; display: grid; place-items: center; padding: 20px; background: rgba(4,6,12,.78); backdrop-filter: blur(10px); opacity: 0; pointer-events: none; transition: opacity .24s ease; }
+    .result-modal.open { opacity: 1; pointer-events: auto; }
+    .result-box { width: min(720px, 100%); max-height: min(760px, 90vh); overflow: auto; padding: 28px; border: 1px solid rgba(246,201,106,.35); border-radius: 26px; background: linear-gradient(145deg, #171d32, #0b0e19); box-shadow: 0 30px 100px rgba(0,0,0,.55); transform: translateY(15px) scale(.98); transition: transform .3s ease; }
+    .result-modal.open .result-box { transform: translateY(0) scale(1); }
+    .result-top { display: flex; justify-content: space-between; align-items: start; gap: 20px; }
+    .result-top h2 { font-size: 26px; letter-spacing: -.04em; }.result-top p { color: var(--muted); font-size: 13px; margin-top: 5px; }
+    .close-btn { width: 34px; height: 34px; cursor: pointer; border: 1px solid var(--line); border-radius: 50%; color: var(--muted-strong); background: rgba(255,255,255,.05); font-size: 19px; line-height: 1; }
+    .result-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 23px; }
+    .result-card { min-height: 127px; padding: 14px 11px; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid rgba(255,255,255,.11); border-radius: 15px; background: rgba(255,255,255,.045); animation: reveal .48s both; animation-delay: var(--delay); }
+    .result-card.ssr { border-color: rgba(246,201,106,.62); background: radial-gradient(circle at 70% 0, rgba(246,201,106,.18), rgba(255,255,255,.04) 65%); }.result-card.sr { border-color: rgba(178,155,248,.47); }.result-card.r { border-color: rgba(107,216,231,.27); }
+    .result-card .card-no { color: var(--muted); font-size: 11px; }.result-card .card-icon { font-size: 27px; }.result-card strong { font-size: 12px; }.result-card small { color: var(--muted); font-size: 11px; }
+    .modal-actions { display: flex; justify-content: end; margin-top: 22px; }
+    .celebrate { animation: pulse .9s ease; }
+    @keyframes drift { to { transform: rotate(384deg); } }
+    @keyframes reveal { from { opacity: 0; transform: translateY(13px) scale(.93); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    @keyframes pulse { 0%,100% { box-shadow: var(--shadow); } 45% { box-shadow: 0 0 0 8px rgba(246,201,106,.05), 0 0 85px rgba(246,201,106,.35); } }
+    @media (max-width: 880px) { .dashboard { grid-template-columns: 1fr; }.side-column { grid-template-columns: repeat(2, minmax(0,1fr)); }.stats-panel { height: 100%; } }
+    @media (max-width: 620px) { .shell { width: min(100% - 28px, 1240px); }.topbar { min-height: 67px; }.nav-link { display: none; }.balance { padding: 7px 9px; }.intro { display: block; margin-bottom: 22px; }.intro-note { margin-top: 17px; }.draw-panel { min-height: auto; }.stage { min-height: 320px; }.stage::before { width: 350px; height: 350px; }.stage::after { width: 250px; height: 250px; }.orbit { width: 228px; height: 228px; }.draw-controls { display: block; padding: 20px; }.actions { margin-top: 18px; }.draw-btn { flex: 1; min-width: 0; }.side-column { grid-template-columns: 1fr; }.history-panel { padding: 22px 20px 14px; }.history-table th, .history-table td { padding-left: 6px; padding-right: 6px; }.history-table th:nth-child(3), .history-table td:nth-child(3) { display: none; }.result-grid { grid-template-columns: repeat(2, 1fr); }.result-box { padding: 21px; }.footer { display: block; }.footer span { display: block; margin-top: 6px; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }
+  </style>
+</head>
+<body>
+  <header class="topbar shell">
+    <a class="brand" href="#top" aria-label="星轨抽卡实验室首页">
+      <span class="brand-mark" aria-hidden="true"><span>✦</span></span>
+      <span class="brand-copy"><strong>星轨抽卡实验室</strong><small>AI GACHA SIMULATOR</small></span>
+    </a>
+    <div class="top-actions">
+      <a class="nav-link" href="#history">抽卡记录</a>
+      <div class="balance-wrap"><span class="balance" title="模拟用星尘，不涉及真实消费"><i></i><span id="balanceValue">3,200</span> 星尘</span><button class="recharge-btn" id="rechargeBtn" type="button" aria-label="补充 1600 星尘">＋1,600</button></div>
+    </div>
+  </header>
+
+  <main id="top" class="shell">
+    <section class="intro" aria-labelledby="pageTitle">
+      <div>
+        <div class="eyebrow">PRISM BANNER · 04</div>
+        <h1 id="pageTitle">把下一颗星，<em>交给概率。</em></h1>
+      </div>
+      <p class="intro-note">一款轻量的 AI 抽卡模拟器。每一次点击都由实时概率和保底规则共同决定。</p>
+    </section>
+
+    <section class="dashboard" aria-label="抽卡工作台">
+      <article class="panel draw-panel" aria-labelledby="bannerTitle">
+        <div class="stage" id="stage">
+          <div class="orbit" aria-hidden="true"><i class="orbit-dot dot-a"></i><i class="orbit-dot dot-b"></i><i class="orbit-dot dot-c"></i></div>
+          <div class="sigil" aria-hidden="true"></div>
+          <div class="stage-copy"><strong>限定卡池 · 晨昏棱镜</strong><span>SSR UP · 心愿捕获率提升</span></div>
+        </div>
+        <div class="draw-controls">
+          <div class="draw-info"><h2 id="bannerTitle">晨昏棱镜</h2><p>每次抽取消耗 160 星尘 · 十连至少获得 1 张 SR</p></div>
+          <div class="actions"><button class="draw-btn secondary" id="singleBtn" type="button">单抽 <span>×1</span></button><button class="draw-btn" id="tenBtn" type="button">十连抽 <span>×10</span></button></div>
+        </div>
+      </article>
+
+      <aside class="side-column" aria-label="概率与保底信息">
+        <section class="panel stats-panel">
+          <div class="panel-label">保底进度 · SSR</div>
+          <div class="pity-head"><div class="pity-number"><span id="pityValue">0</span><span> / 80</span></div><div class="pity-status" id="pityStatus">距离保底还有 80 抽</div></div>
+          <div class="progress-track" role="progressbar" aria-label="SSR 保底进度" aria-valuemin="0" aria-valuemax="80" aria-valuenow="0"><div class="progress-value" id="progressValue"></div></div>
+          <p class="stats-note">第 80 抽必出 SSR。抽到 SSR 后，保底计数会立即归零。</p>
+          <div class="rate-list" aria-label="稀有度概率"><div class="rate-row"><i class="rarity-dot ssr"></i><span>SSR · 星耀</span><strong>1.0%</strong></div><div class="rate-row"><i class="rarity-dot sr"></i><span>SR · 闪耀</span><strong>9.0%</strong></div><div class="rate-row"><i class="rarity-dot r"></i><span>R · 微光</span><strong>90.0%</strong></div></div>
+        </section>
+        <section class="panel stats-panel">
+          <div class="panel-label">本轮数据</div>
+          <div class="rate-list" style="margin-top:18px"><div class="rate-row"><span>累计抽取</span><strong id="totalValue">0</strong></div><div class="rate-row"><span>SSR 收集</span><strong id="ssrValue">0</strong></div><div class="rate-row"><span>最高连出</span><strong id="streakValue">—</strong></div></div>
+        </section>
+      </aside>
+    </section>
+
+    <section class="panel history-panel" id="history" aria-labelledby="historyTitle">
+      <div class="history-head"><div><h2 id="historyTitle">抽卡记录</h2><p>最近的结果会自动保存在这台设备上。</p></div><button class="clear-btn" id="clearBtn" type="button">清空记录</button></div>
+      <div id="historyContent"><div class="empty-state"><strong>还没有抽卡记录</strong>点击上方按钮，看看第一颗星会落在哪里。</div></div>
+    </section>
+
+    <footer class="footer"><span>概率仅供娱乐 · 不涉及真实货币或奖品</span><span>每次抽卡结果均在本地即时生成</span></footer>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="result-modal" id="resultModal" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
+    <div class="result-box">
+      <div class="result-top"><div><h2 id="resultTitle">抽卡结果</h2><p id="resultSub">本次共获得 1 张卡牌</p></div><button class="close-btn" id="closeModal" type="button" aria-label="关闭结果窗口">×</button></div>
+      <div class="result-grid" id="resultGrid"></div>
+      <div class="modal-actions"><button class="draw-btn secondary" id="doneBtn" type="button">收下结果</button></div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const STORAGE_KEY = "startrail-gacha-state-v2";
+      const PITY_LIMIT = 80;
+      const COST = 160;
+      const cards = {
+        SSR: ["曙光·阿尔忒弥斯", "折光者·零", "永昼航行者"],
+        SR: ["潮汐观测员", "纸月炼金师", "夜航信使", "雨幕歌者"],
+        R: ["微光碎片", "旧星图", "回声晶核", "银砂", "雾蓝羽片", "静电花"]
+      };
+      const icons = { SSR: ["✦", "◈", "✧"], SR: ["◌", "◇", "◒", "⌁"], R: ["·", "⟡", "⊹", "⋆", "⁕", "∴"] };
+      const defaultState = { pity: 0, total: 0, ssr: 0, bestStreak: 0, currentStreak: 0, history: [], balance: 3200 };
+      let state = loadState();
+      let busy = false;
+      let toastTimer;
+
+      const $ = (id) => document.getElementById(id);
+      const singleBtn = $("singleBtn");
+      const tenBtn = $("tenBtn");
+      const modal = $("resultModal");
+      const stage = $("stage");
+
+      function loadState() {
+        try { return { ...defaultState, ...(JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}) }; } catch { return { ...defaultState }; }
+      }
+      function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+      function pick(list) { return list[Math.floor(Math.random() * list.length)]; }
+      function rollRarity() {
+        const next = state.pity + 1;
+        if (next >= PITY_LIMIT) return "SSR";
+        const n = Math.random();
+        if (n < 0.01) return "SSR";
+        if (n < 0.10) return "SR";
+        return "R";
+      }
+      function makeCard(rarity, index) {
+        const name = pick(cards[rarity]);
+        const card = { rarity, name, icon: pick(icons[rarity]), index, at: Date.now() };
+        if (rarity === "SSR") { state.pity = 0; state.ssr += 1; state.currentStreak += 1; state.bestStreak = Math.max(state.bestStreak, state.currentStreak); }
+        else { state.pity += 1; state.currentStreak = 0; }
+        state.total += 1;
+        return card;
+      }
+      function formatTime(timestamp) { return new Intl.DateTimeFormat("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(timestamp)); }
+      function rarityLabel(rarity) { return rarity === "SSR" ? "SSR 星耀" : rarity === "SR" ? "SR 闪耀" : "R 微光"; }
+      function draw(count) {
+        if (busy) return;
+        if (state.balance < COST * count) { showToast("星尘不足，本轮模拟已停止"); return; }
+        busy = true; setButtons(true);
+        state.balance -= COST * count;
+        const result = [];
+        for (let i = 0; i < count; i += 1) result.push(makeCard(rollRarity(), i));
+        if (count === 10 && !result.some((card) => card.rarity === "SSR" || card.rarity === "SR")) {
+          const replacement = result[result.length - 1];
+          state.pity -= 1; state.currentStreak = 0;
+          result[result.length - 1] = makeCard("SR", 9);
+          state.total -= 1;
+          void replacement;
+        }
+        const best = result.slice().sort((a, b) => ({ SSR: 3, SR: 2, R: 1 }[b.rarity] - ({ SSR: 3, SR: 2, R: 1 }[a.rarity])))[0];
+        state.history.unshift({ time: Date.now(), count, rarity: best.rarity, summary: result.map((card) => card.rarity).join(" · "), highlight: best.name });
+        state.history = state.history.slice(0, 18);
+        saveState(); render();
+        stage.classList.remove("celebrate"); void stage.offsetWidth; stage.classList.add("celebrate");
+        window.setTimeout(() => { showResults(result); setButtons(false); busy = false; }, count === 10 ? 620 : 480);
+      }
+      function setButtons(disabled) { singleBtn.disabled = disabled; tenBtn.disabled = disabled; singleBtn.querySelector("span").textContent = disabled ? "…" : "×1"; tenBtn.querySelector("span").textContent = disabled ? "…" : "×10"; }
+      function showResults(result) {
+        $("resultTitle").textContent = result.length === 10 ? "十连完成" : "抽卡结果";
+        $("resultSub").textContent = `本次共获得 ${result.length} 张卡牌${result.some((card) => card.rarity === "SSR") ? " · 发现 SSR 星耀" : ""}`;
+        $("resultGrid").innerHTML = result.map((card, index) => `<div class="result-card ${card.rarity.toLowerCase()}" style="--delay:${index * 55}ms"><span class="card-no">NO.${String(state.total - result.length + index + 1).padStart(3, "0")}</span><span class="card-icon">${card.icon}</span><strong>${card.name}</strong><small>${rarityLabel(card.rarity)}</small></div>`).join("");
+        modal.classList.add("open"); $("closeModal").focus();
+      }
+      function closeModal() { modal.classList.remove("open"); }
+      function showToast(message) { const node = $("toast"); node.textContent = message; node.classList.add("show"); window.clearTimeout(toastTimer); toastTimer = window.setTimeout(() => node.classList.remove("show"), 2600); }
+      function render() {
+        $("pityValue").textContent = state.pity;
+        $("pityStatus").textContent = state.pity === 0 ? "保底计数已重置" : `距离保底还有 ${PITY_LIMIT - state.pity} 抽`;
+        $("progressValue").style.width = `${Math.min(100, state.pity / PITY_LIMIT * 100)}%`;
+        $("progressValue").parentElement.setAttribute("aria-valuenow", state.pity);
+        $("totalValue").textContent = state.total;
+        $("ssrValue").textContent = state.ssr;
+        $("streakValue").textContent = state.bestStreak ? `${state.bestStreak} 张` : "—";
+        $("balanceValue").textContent = state.balance.toLocaleString("en-US");
+        const content = $("historyContent");
+        if (!state.history.length) { content.innerHTML = `<div class="empty-state"><strong>还没有抽卡记录</strong>点击上方按钮，看看第一颗星会落在哪里。</div>`; return; }
+        content.innerHTML = `<table class="history-table"><thead><tr><th>时间</th><th>结果</th><th>卡池</th><th>亮点</th></tr></thead><tbody>${state.history.map((entry) => `<tr><td>${formatTime(entry.time)}</td><td><span class="result-chip ${entry.rarity.toLowerCase()}">${entry.summary}</span></td><td>晨昏棱镜</td><td>${entry.highlight}</td></tr>`).join("")}</tbody></table>`;
+      }
+      function clearHistory() { if (!state.history.length) { showToast("记录已经是空的"); return; } state.history = []; saveState(); render(); showToast("已清空本地抽卡记录"); }
+      singleBtn.addEventListener("click", () => draw(1));
+      tenBtn.addEventListener("click", () => draw(10));
+      $("clearBtn").addEventListener("click", clearHistory);
+      $("rechargeBtn").addEventListener("click", () => { state.balance += 1600; saveState(); render(); showToast("已补充 1,600 星尘"); });
+      $("closeModal").addEventListener("click", closeModal); $("doneBtn").addEventListener("click", closeModal);
+      modal.addEventListener("click", (event) => { if (event.target === modal) closeModal(); });
+      document.addEventListener("keydown", (event) => { if (event.key === "Escape" && modal.classList.contains("open")) closeModal(); });
+
+      // WebMCP: the same state-changing actions are available to supported AI agents.
+      const modelContext = typeof document !== "undefined" ? document.modelContext : undefined;
+      if (modelContext && typeof modelContext.registerTool === "function") {
+        const lifecycle = new AbortController();
+        const register = (tool) => { try { Promise.resolve(modelContext.registerTool(tool, { signal: lifecycle.signal })).catch(() => {}); } catch {} };
+        register({ name: "read_gacha_status", title: "读取抽卡状态", description: "读取当前星尘、累计抽取、SSR 保底进度和最近记录。", inputSchema: { type: "object", properties: {}, additionalProperties: false }, annotations: { readOnlyHint: true }, execute: () => ({ balance: state.balance, total: state.total, ssr: state.ssr, pity: state.pity, pityLimit: PITY_LIMIT, recentHistory: state.history.slice(0, 5) }) });
+        register({ name: "perform_gacha_draw", title: "执行抽卡", description: "执行一次单抽或十连抽，并返回抽卡结果。仅在用户明确要求抽卡时使用。", inputSchema: { type: "object", properties: { count: { type: "integer", enum: [1, 10] } }, required: ["count"], additionalProperties: false }, annotations: { readOnlyHint: false }, execute: async (input) => { const count = Number(input && input.count); if (![1, 10].includes(count)) throw new Error("count must be 1 or 10"); if (state.balance < COST * count) throw new Error("星尘不足"); const result = []; state.balance -= COST * count; for (let i = 0; i < count; i += 1) result.push(makeCard(rollRarity(), i)); if (count === 10 && !result.some((card) => card.rarity !== "R")) { state.pity -= 1; result[result.length - 1] = makeCard("SR", 9); state.total -= 1; } state.history.unshift({ time: Date.now(), count, rarity: result.some((card) => card.rarity === "SSR") ? "SSR" : result.some((card) => card.rarity === "SR") ? "SR" : "R", summary: result.map((card) => card.rarity).join(" · "), highlight: result[0].name }); state.history = state.history.slice(0, 18); saveState(); render(); return { count, results: result.map((card) => ({ rarity: card.rarity, name: card.name })), pity: state.pity, balance: state.balance }; } });
+        window.addEventListener("pagehide", () => lifecycle.abort(), { once: true });
+      }
+      render();
+    })();
+  </script>
+</body>
+</html>
+
