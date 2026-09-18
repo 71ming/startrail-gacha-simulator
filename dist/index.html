@@ -281,7 +281,7 @@
       function currentPool() { return pools[state.poolId] || pools.prism; }
       function currentPity() { return Number(state.pityByPool?.[state.poolId]) || 0; }
       function setCurrentPity(value) { state.pityByPool[state.poolId] = Math.max(0, Math.min(PITY_LIMIT - 1, Number(value) || 0)); }
-      function pickCardName(rarity) { if (rarity === "SSR") { const featured = currentPool().featured; if (Math.random() < 0.55) return featured; return pick(cards.SSR.filter((name) => name !== featured)); } return pick(cards[rarity]); }
+      function pickCardName(rarity) { if (rarity === "SSR") { const featured = currentPool().featured; if (Math.random() < 0.55) return featured; const permanentSSR = cards.SSR.filter((name) => !Object.values(pools).some((pool) => pool.featured === name)); return pick(permanentSSR); } return pick(cards[rarity]); }
       function iconFor(name, rarity) { const seed = [...name].reduce((sum, char) => sum + char.charCodeAt(0), 0); return icons[rarity][seed % icons[rarity].length]; }
       function catalogEntries() { return Object.entries(cards).flatMap(([rarity, names]) => names.map((name) => ({ name, rarity, pool: rarity === "SSR" ? (Object.values(pools).find((pool) => pool.featured === name)?.name || "常驻") : "常驻" }))); }
       function rollRarity() {
