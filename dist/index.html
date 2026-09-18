@@ -118,7 +118,7 @@
     .rarity-dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
     .rarity-dot.ssr { background: var(--gold); box-shadow: 0 0 9px var(--gold); }.rarity-dot.sr { background: var(--violet); box-shadow: 0 0 9px var(--violet); }.rarity-dot.r { background: var(--cyan); box-shadow: 0 0 9px var(--cyan); }
     .rate-row span:nth-child(2) { color: var(--muted-strong); }.rate-row strong { margin-left: auto; color: var(--text); font-size: 13px; }
-    .pool-switcher { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 16px 28px 0; }
+    .pool-switcher { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 16px 28px 0; }
     .pool-btn { cursor: pointer; padding: 12px 14px; border: 1px solid var(--line); border-radius: 13px; color: var(--muted); background: rgba(255,255,255,.035); text-align: left; transition: border-color .18s ease, background .18s ease, color .18s ease; }
     .pool-btn strong, .pool-btn span { display: block; }.pool-btn strong { color: var(--muted-strong); font-size: 13px; }.pool-btn span { margin-top: 2px; font-size: 11px; }.pool-btn:hover { border-color: rgba(246,201,106,.42); }.pool-btn.active { border-color: rgba(246,201,106,.65); background: rgba(246,201,106,.09); color: var(--gold-strong); }.pool-btn.active strong { color: var(--gold-strong); }
     .stage[data-pool="frost"] { background: radial-gradient(circle at 52% 47%, rgba(107,216,231,.11), transparent 19rem); }.stage[data-pool="frost"] .sigil { border-color: rgba(107,216,231,.78); background: linear-gradient(135deg, rgba(107,216,231,.16), rgba(178,155,248,.1)); box-shadow: 0 0 50px rgba(107,216,231,.17), inset 0 0 45px rgba(107,216,231,.11); }.stage[data-pool="frost"] .sigil::before { color: var(--cyan); text-shadow: 0 0 22px rgba(107,216,231,.75); }.stage[data-pool="frost"] .orbit { border-color: rgba(107,216,231,.52); }
@@ -161,7 +161,7 @@
     @keyframes reveal { from { opacity: 0; transform: translateY(13px) scale(.93); } to { opacity: 1; transform: translateY(0) scale(1); } }
     @keyframes pulse { 0%,100% { box-shadow: var(--shadow); } 45% { box-shadow: 0 0 0 8px rgba(246,201,106,.05), 0 0 85px rgba(246,201,106,.35); } }
     @media (max-width: 880px) { .dashboard { grid-template-columns: 1fr; }.side-column { grid-template-columns: repeat(2, minmax(0,1fr)); }.stats-panel { height: 100%; } }
-    @media (max-width: 620px) { .shell { width: min(100% - 28px, 1240px); }.topbar { min-height: 67px; }.nav-link { display: none; }.balance { padding: 7px 9px; }.intro { display: block; margin-bottom: 22px; }.intro-note { margin-top: 17px; }.draw-panel { min-height: auto; }.stage { min-height: 320px; }.stage::before { width: 350px; height: 350px; }.stage::after { width: 250px; height: 250px; }.orbit { width: 228px; height: 228px; }.draw-controls { display: block; padding: 20px; }.pool-switcher { padding: 14px 20px 0; }.actions { margin-top: 18px; }.draw-btn { flex: 1; min-width: 0; }.side-column { grid-template-columns: 1fr; }.history-panel, .catalog-panel { padding: 22px 20px 14px; }.history-table th, .history-table td { padding-left: 6px; padding-right: 6px; }.history-table th:nth-child(3), .history-table td:nth-child(3) { display: none; }.catalog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }.catalog-head { display: block; }.catalog-count { display: block; margin-top: 9px; }.result-grid { grid-template-columns: repeat(2, 1fr); }.result-box { padding: 21px; }.footer { display: block; }.footer span { display: block; margin-top: 6px; } }
+    @media (max-width: 620px) { .shell { width: min(100% - 28px, 1240px); }.topbar { min-height: 67px; }.nav-link { display: none; }.balance { padding: 7px 9px; }.intro { display: block; margin-bottom: 22px; }.intro-note { margin-top: 17px; }.draw-panel { min-height: auto; }.stage { min-height: 320px; }.stage::before { width: 350px; height: 350px; }.stage::after { width: 250px; height: 250px; }.orbit { width: 228px; height: 228px; }.draw-controls { display: block; padding: 20px; }.pool-switcher { grid-template-columns: 1fr; padding: 14px 20px 0; }.actions { margin-top: 18px; }.draw-btn { flex: 1; min-width: 0; }.side-column { grid-template-columns: 1fr; }.history-panel, .catalog-panel { padding: 22px 20px 14px; }.history-table th, .history-table td { padding-left: 6px; padding-right: 6px; }.history-table th:nth-child(3), .history-table td:nth-child(3) { display: none; }.catalog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }.catalog-head { display: block; }.catalog-count { display: block; margin-top: 9px; }.result-grid { grid-template-columns: repeat(2, 1fr); }.result-box { padding: 21px; }.footer { display: block; }.footer span { display: block; margin-top: 6px; } }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }
   </style>
 </head>
@@ -193,7 +193,7 @@
           <div class="sigil" aria-hidden="true"></div>
           <div class="stage-copy"><strong id="stageTitle">限定卡池 · 晨昏棱镜</strong><span id="stageDesc">SSR UP · 曙光·阿尔忒弥斯</span></div>
         </div>
-        <div class="pool-switcher" role="tablist" aria-label="选择卡池"><button class="pool-btn active" id="prismPoolBtn" type="button" role="tab" aria-selected="true"><strong>晨昏棱镜</strong><span>SSR UP · 曙光·阿尔忒弥斯</span></button><button class="pool-btn" id="frostPoolBtn" type="button" role="tab" aria-selected="false"><strong>霜火边界</strong><span>SSR UP · 冰焰守门人</span></button></div>
+        <div class="pool-switcher" role="tablist" aria-label="选择卡池"><button class="pool-btn active" id="prismPoolBtn" type="button" role="tab" aria-selected="true"><strong>晨昏棱镜</strong><span>SSR UP · 曙光·阿尔忒弥斯</span></button><button class="pool-btn" id="frostPoolBtn" type="button" role="tab" aria-selected="false"><strong>霜火边界</strong><span>SSR UP · 冰焰守门人</span></button><button class="pool-btn" id="standardPoolBtn" type="button" role="tab" aria-selected="false"><strong>星轨常驻</strong><span>常驻 SSR · 无限定 UP</span></button></div>
         <div class="draw-controls">
           <div class="draw-info"><h2 id="bannerTitle">晨昏棱镜</h2><p id="bannerNote">每次抽取消耗 160 星尘 · 十连至少获得 1 张 SR</p></div>
           <div class="actions"><button class="draw-btn secondary" id="singleBtn" type="button">单抽 <span>×1</span></button><button class="draw-btn" id="tenBtn" type="button">十连抽 <span>×10</span></button></div>
@@ -245,7 +245,8 @@
       const COST = 160;
       const pools = {
         prism: { id: "prism", tag: "PRISM BANNER · 04", name: "晨昏棱镜", stage: "限定卡池 · 晨昏棱镜", featured: "曙光·阿尔忒弥斯" },
-        frost: { id: "frost", tag: "NOVA BANNER · 05", name: "霜火边界", stage: "限定卡池 · 霜火边界", featured: "冰焰守门人" }
+        frost: { id: "frost", tag: "NOVA BANNER · 05", name: "霜火边界", stage: "限定卡池 · 霜火边界", featured: "冰焰守门人" },
+        standard: { id: "standard", tag: "STANDARD POOL · 01", name: "星轨常驻", stage: "常驻卡池 · 星轨常驻", featured: null }
       };
       const cards = {
         SSR: ["曙光·阿尔忒弥斯", "折光者·零", "永昼航行者", "冰焰守门人", "潮声机神", "星渊舞者"],
@@ -253,7 +254,7 @@
         R: ["微光碎片", "旧星图", "回声晶核", "银砂", "雾蓝羽片", "静电花", "灰烬种子", "冷月砂"]
       };
       const icons = { SSR: ["✦", "◈", "✧"], SR: ["◌", "◇", "◒", "⌁"], R: ["·", "⟡", "⊹", "⋆", "⁕", "∴"] };
-      const defaultState = { pity: 0, pityByPool: { prism: 0, frost: 0 }, total: 0, ssr: 0, bestStreak: 0, currentStreak: 0, history: [], balance: 3200, poolId: "prism", collection: {} };
+      const defaultState = { pity: 0, pityByPool: { prism: 0, frost: 0, standard: 0 }, total: 0, ssr: 0, bestStreak: 0, currentStreak: 0, history: [], balance: 3200, poolId: "prism", collection: {} };
       let state = loadState();
       let busy = false;
       let toastTimer;
@@ -264,7 +265,7 @@
       const tenBtn = $("tenBtn");
       const modal = $("resultModal");
       const stage = $("stage");
-      const poolButtons = { prism: $("prismPoolBtn"), frost: $("frostPoolBtn") };
+      const poolButtons = { prism: $("prismPoolBtn"), frost: $("frostPoolBtn"), standard: $("standardPoolBtn") };
 
       function loadState() {
         try {
@@ -281,7 +282,7 @@
       function currentPool() { return pools[state.poolId] || pools.prism; }
       function currentPity() { return Number(state.pityByPool?.[state.poolId]) || 0; }
       function setCurrentPity(value) { state.pityByPool[state.poolId] = Math.max(0, Math.min(PITY_LIMIT - 1, Number(value) || 0)); }
-      function pickCardName(rarity) { if (rarity === "SSR") { const featured = currentPool().featured; if (Math.random() < 0.55) return featured; const permanentSSR = cards.SSR.filter((name) => !Object.values(pools).some((pool) => pool.featured === name)); return pick(permanentSSR); } return pick(cards[rarity]); }
+      function pickCardName(rarity) { if (rarity === "SSR") { const pool = currentPool(); const permanentSSR = cards.SSR.filter((name) => !Object.values(pools).some((item) => item.featured === name)); if (!pool.featured) return pick(permanentSSR); if (Math.random() < 0.55) return pool.featured; return pick(permanentSSR); } return pick(cards[rarity]); }
       function iconFor(name, rarity) { const seed = [...name].reduce((sum, char) => sum + char.charCodeAt(0), 0); return icons[rarity][seed % icons[rarity].length]; }
       function catalogEntries() { return Object.entries(cards).flatMap(([rarity, names]) => names.map((name) => ({ name, rarity, pool: rarity === "SSR" ? (Object.values(pools).find((pool) => pool.featured === name)?.name || "常驻") : "常驻" }))); }
       function rollRarity() {
@@ -334,7 +335,7 @@
       function closeModal() { modal.classList.remove("open"); }
       function showToast(message) { const node = $("toast"); node.textContent = message; node.classList.add("show"); window.clearTimeout(toastTimer); toastTimer = window.setTimeout(() => node.classList.remove("show"), 2600); }
       function switchPool(poolId) { if (busy || !pools[poolId]) return; state.poolId = poolId; saveState(); render(); showToast(`已切换至 ${pools[poolId].name}`); }
-      function renderPool() { const pool = currentPool(); $("eyebrow").textContent = pool.tag; $("stageTitle").textContent = pool.stage; $("stageDesc").textContent = `SSR UP · ${pool.featured}`; $("bannerTitle").textContent = pool.name; $("bannerNote").textContent = `每次抽取消耗 160 星尘 · 十连至少获得 1 张 SR · ${pool.featured} 概率提升 · 本卡池保底独立记录`; stage.dataset.pool = pool.id; Object.entries(poolButtons).forEach(([id, button]) => { const active = id === pool.id; button.classList.toggle("active", active); button.setAttribute("aria-selected", active ? "true" : "false"); }); }
+      function renderPool() { const pool = currentPool(); const hasFeatured = Boolean(pool.featured); $("eyebrow").textContent = pool.tag; $("stageTitle").textContent = pool.stage; $("stageDesc").textContent = hasFeatured ? `SSR UP · ${pool.featured}` : "SSR 常驻 · 无限定 UP"; $("bannerTitle").textContent = pool.name; $("bannerNote").textContent = hasFeatured ? `每次抽取消耗 160 星尘 · 十连至少获得 1 张 SR · ${pool.featured} 概率提升 · 本卡池保底独立记录` : "每次抽取消耗 160 星尘 · 十连至少获得 1 张 SR · 常驻 SSR 等概率出现 · 本卡池保底独立记录"; stage.dataset.pool = pool.id; Object.entries(poolButtons).forEach(([id, button]) => { const active = id === pool.id; button.classList.toggle("active", active); button.setAttribute("aria-selected", active ? "true" : "false"); }); }
       function renderCollection() { const entries = catalogEntries(); const found = entries.filter((entry) => state.collection[entry.name]).length; $("collectionCount").textContent = `${found} / ${entries.length} 已发现`; const visible = catalogFilter === "ALL" ? entries : entries.filter((entry) => entry.rarity === catalogFilter); $("catalogGrid").innerHTML = visible.map((entry) => { const collected = !!state.collection[entry.name]; return `<article class="catalog-card ${entry.rarity.toLowerCase()} ${collected ? "collected" : "locked"}"><div class="catalog-top"><span class="catalog-rarity">${entry.rarity}</span><span>${collected ? "已收集" : "未发现"}</span></div><span class="catalog-icon">${collected ? iconFor(entry.name, entry.rarity) : "?"}</span><strong>${collected ? entry.name : "未知星体"}</strong><small>${entry.pool}</small></article>`; }).join(""); }
       function render() {
         renderPool();
@@ -369,7 +370,7 @@
         const lifecycle = new AbortController();
         const register = (tool) => { try { Promise.resolve(modelContext.registerTool(tool, { signal: lifecycle.signal })).catch(() => {}); } catch {} };
         register({ name: "read_gacha_status", title: "读取抽卡状态", description: "读取当前星尘、卡池、图鉴收集数、累计抽取、当前卡池独立 SSR 保底进度和最近记录。", inputSchema: { type: "object", properties: {}, additionalProperties: false }, annotations: { readOnlyHint: true }, execute: () => ({ balance: state.balance, poolId: state.poolId, poolName: currentPool().name, total: state.total, ssr: state.ssr, pity: currentPity(), pityByPool: { ...state.pityByPool }, pityLimit: PITY_LIMIT, collectionCount: Object.keys(state.collection).length, collectionTotal: catalogEntries().length, recentHistory: state.history.slice(0, 5) }) });
-        register({ name: "select_gacha_pool", title: "切换抽卡池", description: "切换当前抽卡池，并更新可见的卡池标题与 UP 角色。", inputSchema: { type: "object", properties: { poolId: { type: "string", enum: ["prism", "frost"] } }, required: ["poolId"], additionalProperties: false }, annotations: { readOnlyHint: false }, execute: (input) => { const poolId = String(input && input.poolId); if (!pools[poolId]) throw new Error("未知卡池"); switchPool(poolId); return { poolId, poolName: currentPool().name, featured: currentPool().featured }; } });
+        register({ name: "select_gacha_pool", title: "切换抽卡池", description: "切换当前抽卡池，并更新可见的卡池标题与抽卡规则。", inputSchema: { type: "object", properties: { poolId: { type: "string", enum: ["prism", "frost", "standard"] } }, required: ["poolId"], additionalProperties: false }, annotations: { readOnlyHint: false }, execute: (input) => { const poolId = String(input && input.poolId); if (!pools[poolId]) throw new Error("未知卡池"); switchPool(poolId); return { poolId, poolName: currentPool().name, featured: currentPool().featured }; } });
         register({ name: "perform_gacha_draw", title: "执行抽卡", description: "执行一次单抽或十连抽，并返回抽卡结果。仅在用户明确要求抽卡时使用。", inputSchema: { type: "object", properties: { count: { type: "integer", enum: [1, 10] } }, required: ["count"], additionalProperties: false }, annotations: { readOnlyHint: false }, execute: async (input) => { const count = Number(input && input.count); if (![1, 10].includes(count)) throw new Error("count must be 1 or 10"); if (state.balance < COST * count) throw new Error("星尘不足"); const result = []; state.balance -= COST * count; for (let i = 0; i < count; i += 1) result.push(makeCard(rollRarity(), i)); if (count === 10 && !result.some((card) => card.rarity !== "R")) { setCurrentPity(currentPity() - 1); result[result.length - 1] = makeCard("SR", 9); state.total -= 1; } state.history.unshift({ time: Date.now(), count, rarity: result.some((card) => card.rarity === "SSR") ? "SSR" : result.some((card) => card.rarity === "SR") ? "SR" : "R", summary: result.map((card) => card.rarity).join(" · "), highlight: result[0].name, poolId: state.poolId }); state.history = state.history.slice(0, 18); saveState(); render(); showResults(result); return { count, poolId: state.poolId, results: result.map((card) => ({ rarity: card.rarity, name: card.name })), pity: currentPity(), pityByPool: { ...state.pityByPool }, balance: state.balance, collectionCount: Object.keys(state.collection).length }; } });
         window.addEventListener("pagehide", () => lifecycle.abort(), { once: true });
       }
