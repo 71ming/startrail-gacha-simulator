@@ -173,7 +173,7 @@
     </a>
     <div class="top-actions">
       <a class="nav-link" href="#catalog">图鉴</a><a class="nav-link" href="#history">抽卡记录</a>
-      <div class="balance-wrap"><span class="balance" title="模拟用星尘，不涉及真实消费"><i></i><span id="balanceValue">3,200</span> 星尘</span><button class="recharge-btn" id="rechargeBtn" type="button" aria-label="补充 1600 星尘">＋1,600</button></div>
+      <div class="balance-wrap"><span class="balance" title="模拟用星尘，不涉及真实消费"><i></i><span id="balanceValue">3,200</span> 星尘</span><button class="recharge-btn" id="rechargeBtn" type="button" aria-label="补充模拟星尘">＋补充</button></div>
     </div>
   </header>
 
@@ -195,7 +195,7 @@
         </div>
         <div class="pool-switcher" role="tablist" aria-label="选择卡池"><button class="pool-btn active" id="prismPoolBtn" type="button" role="tab" aria-selected="true"><strong>晨昏棱镜</strong><span>SSR UP · 曙光·阿尔忒弥斯</span></button><button class="pool-btn" id="frostPoolBtn" type="button" role="tab" aria-selected="false"><strong>霜火边界</strong><span>SSR UP · 冰焰守门人</span></button><button class="pool-btn" id="standardPoolBtn" type="button" role="tab" aria-selected="false"><strong>星轨常驻</strong><span>常驻 SSR · 无限定 UP</span></button></div>
         <div class="draw-controls">
-          <div class="draw-info"><h2 id="bannerTitle">晨昏棱镜</h2><p id="bannerNote">每次抽取消耗 160 星尘 · 十连至少获得 1 张 SR</p></div>
+          <div class="draw-info"><h2 id="bannerTitle">晨昏棱镜</h2><p id="bannerNote">抽卡规则加载中</p></div>
           <div class="actions"><button class="draw-btn secondary" id="singleBtn" type="button">单抽 <span>×1</span></button><button class="draw-btn" id="tenBtn" type="button">十连抽 <span>×10</span></button></div>
         </div>
       </article>
@@ -203,9 +203,9 @@
       <aside class="side-column" aria-label="概率与保底信息">
         <section class="panel stats-panel">
           <div class="panel-label">保底进度 · SSR</div>
-          <div class="pity-head"><div class="pity-number"><span id="pityValue">0</span><span> / 80</span></div><div class="pity-status" id="pityStatus">距离保底还有 80 抽</div></div>
-          <div class="progress-track" role="progressbar" aria-label="SSR 保底进度" aria-valuemin="0" aria-valuemax="80" aria-valuenow="0"><div class="progress-value" id="progressValue"></div></div>
-          <p class="stats-note">第 80 抽必出 SSR。两个卡池独立累计，抽到 SSR 后当前卡池保底会立即归零。</p>
+          <div class="pity-head"><div class="pity-number"><span id="pityValue">0</span><span> / <span id="pityLimitValue">保底</span></span></div><div class="pity-status" id="pityStatus">保底计数加载中</div></div>
+          <div class="progress-track" role="progressbar" aria-label="SSR 保底进度" aria-valuemin="0" aria-valuenow="0"><div class="progress-value" id="progressValue"></div></div>
+          <p class="stats-note" id="pityRuleNote">SSR 保底规则加载中。</p>
           <div class="rate-list" aria-label="稀有度概率"><div class="rate-row"><i class="rarity-dot ssr"></i><span>SSR · 星耀</span><strong>1.0%</strong></div><div class="rate-row"><i class="rarity-dot sr"></i><span>SR · 闪耀</span><strong>9.0%</strong></div><div class="rate-row"><i class="rarity-dot r"></i><span>R · 微光</span><strong>90.0%</strong></div></div>
         </section>
         <section class="panel stats-panel">
@@ -243,6 +243,7 @@
       const STORAGE_KEY = "startrail-gacha-state-v2";
       const PITY_LIMIT = 80;
       const COST = 160;
+      const RECHARGE_AMOUNT = COST * 10;
       const pools = {
         prism: { id: "prism", tag: "PRISM BANNER · 04", name: "晨昏棱镜", stage: "限定卡池 · 晨昏棱镜", featured: "曙光·阿尔忒弥斯" },
         frost: { id: "frost", tag: "NOVA BANNER · 05", name: "霜火边界", stage: "限定卡池 · 霜火边界", featured: "冰焰守门人" },
@@ -267,19 +268,38 @@
       const stage = $("stage");
       const poolButtons = { prism: $("prismPoolBtn"), frost: $("frostPoolBtn"), standard: $("standardPoolBtn") };
 
+      function isRecord(value) { return value !== null && typeof value === "object" && !Array.isArray(value); }
+      function isPoolId(value) { return typeof value === "string" && Object.prototype.hasOwnProperty.call(pools, value); }
+      function safeInt(value, fallback, max = Number.MAX_SAFE_INTEGER) { const number = Number(value); return Number.isFinite(number) ? Math.max(0, Math.min(max, Math.floor(number))) : fallback; }
+      function knownCardNames() { return new Set(Object.values(cards).flat()); }
+      function sanitizeHistory(history) {
+        if (!Array.isArray(history)) return [];
+        const knownNames = knownCardNames();
+        return history.filter(isRecord).slice(0, 18).map((entry) => ({
+          time: Number.isFinite(Number(entry.time)) ? Number(entry.time) : Date.now(),
+          count: safeInt(entry.count, 1, 10),
+          rarity: ["SSR", "SR", "R"].includes(entry.rarity) ? entry.rarity : "R",
+          summary: typeof entry.summary === "string" ? entry.summary.slice(0, 180) : String(entry.rarity || "R"),
+          highlight: knownNames.has(entry.highlight) ? entry.highlight : "未知结果",
+          poolId: isPoolId(entry.poolId) ? entry.poolId : "prism"
+        }));
+      }
       function loadState() {
         try {
           const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
-          const legacyPool = pools[saved.poolId] ? saved.poolId : defaultState.poolId;
-          const pityByPool = saved.pityByPool && typeof saved.pityByPool === "object"
-            ? { ...defaultState.pityByPool, ...saved.pityByPool }
-            : { ...defaultState.pityByPool, [legacyPool]: Number(saved.pity) || 0 };
-          return { ...defaultState, ...saved, pityByPool, collection: { ...defaultState.collection, ...(saved.collection || {}) } };
-        } catch { return { ...defaultState, pityByPool: { ...defaultState.pityByPool } }; }
+          const legacyPool = isPoolId(saved.poolId) ? saved.poolId : defaultState.poolId;
+          const pityByPool = { ...defaultState.pityByPool };
+          if (isRecord(saved.pityByPool)) Object.keys(pityByPool).forEach((poolId) => { pityByPool[poolId] = safeInt(saved.pityByPool[poolId], 0, PITY_LIMIT - 1); });
+          else pityByPool[legacyPool] = safeInt(saved.pity, 0, PITY_LIMIT - 1);
+          const collection = {};
+          const knownNames = knownCardNames();
+          if (isRecord(saved.collection)) Object.entries(saved.collection).forEach(([name, collected]) => { if (knownNames.has(name) && collected === true) collection[name] = true; });
+          return { ...defaultState, pity: pityByPool[legacyPool], pityByPool, total: safeInt(saved.total, 0), ssr: safeInt(saved.ssr, 0), bestStreak: safeInt(saved.bestStreak, 0), currentStreak: safeInt(saved.currentStreak, 0), history: sanitizeHistory(saved.history), balance: safeInt(saved.balance, defaultState.balance), poolId: legacyPool, collection };
+        } catch { return { ...defaultState, pityByPool: { ...defaultState.pityByPool }, history: [], collection: {} }; }
       }
-      function saveState() { state.pity = currentPity(); localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+      function saveState() { state.pity = currentPity(); try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {} }
       function pick(list) { return list[Math.floor(Math.random() * list.length)]; }
-      function currentPool() { return pools[state.poolId] || pools.prism; }
+      function currentPool() { return isPoolId(state.poolId) ? pools[state.poolId] : pools.prism; }
       function currentPity() { return Number(state.pityByPool?.[state.poolId]) || 0; }
       function setCurrentPity(value) { state.pityByPool[state.poolId] = Math.max(0, Math.min(PITY_LIMIT - 1, Number(value) || 0)); }
       function pickCardName(rarity) { if (rarity === "SSR") { const pool = currentPool(); const permanentSSR = cards.SSR.filter((name) => !Object.values(pools).some((item) => item.featured === name)); if (!pool.featured) return pick(permanentSSR); if (Math.random() < 0.55) return pool.featured; return pick(permanentSSR); } return pick(cards[rarity]); }
@@ -302,23 +322,27 @@
         state.total += 1;
         return card;
       }
-      function formatTime(timestamp) { return new Intl.DateTimeFormat("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(timestamp)); }
+      function formatTime(timestamp) { const date = new Date(timestamp); return Number.isNaN(date.getTime()) ? "未知时间" : new Intl.DateTimeFormat("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).format(date); }
       function rarityLabel(rarity) { return rarity === "SSR" ? "SSR 星耀" : rarity === "SR" ? "SR 闪耀" : "R 微光"; }
+      function bestCard(result) { return result.slice().sort((a, b) => ({ SSR: 3, SR: 2, R: 1 }[b.rarity] - ({ SSR: 3, SR: 2, R: 1 }[a.rarity])))[0]; }
+      function ensureTenPullGuarantee(result, collectedBefore) {
+        if (result.length !== 10 || result.some((card) => card.rarity === "SSR" || card.rarity === "SR")) return;
+        const replacement = result[result.length - 1];
+        setCurrentPity(currentPity() - 1); state.currentStreak = 0;
+        if (!collectedBefore.has(replacement.name) && !result.slice(0, -1).some((card) => card.name === replacement.name)) delete state.collection[replacement.name];
+        result[result.length - 1] = makeCard("SR", 9);
+        state.total -= 1;
+      }
       function draw(count) {
         if (busy) return;
         if (state.balance < COST * count) { showToast("星尘不足，本轮模拟已停止"); return; }
         busy = true; setButtons(true);
         state.balance -= COST * count;
+        const collectedBefore = new Set(Object.keys(state.collection));
         const result = [];
         for (let i = 0; i < count; i += 1) result.push(makeCard(rollRarity(), i));
-        if (count === 10 && !result.some((card) => card.rarity === "SSR" || card.rarity === "SR")) {
-          const replacement = result[result.length - 1];
-          setCurrentPity(currentPity() - 1); state.currentStreak = 0;
-          result[result.length - 1] = makeCard("SR", 9);
-          state.total -= 1;
-          void replacement;
-        }
-        const best = result.slice().sort((a, b) => ({ SSR: 3, SR: 2, R: 1 }[b.rarity] - ({ SSR: 3, SR: 2, R: 1 }[a.rarity])))[0];
+        ensureTenPullGuarantee(result, collectedBefore);
+        const best = bestCard(result);
         state.history.unshift({ time: Date.now(), count, rarity: best.rarity, summary: result.map((card) => card.rarity).join(" · "), highlight: best.name, poolId: state.poolId });
         state.history = state.history.slice(0, 18);
         saveState(); render();
@@ -334,30 +358,62 @@
       }
       function closeModal() { modal.classList.remove("open"); }
       function showToast(message) { const node = $("toast"); node.textContent = message; node.classList.add("show"); window.clearTimeout(toastTimer); toastTimer = window.setTimeout(() => node.classList.remove("show"), 2600); }
-      function switchPool(poolId) { if (busy || !pools[poolId]) return; state.poolId = poolId; saveState(); render(); showToast(`已切换至 ${pools[poolId].name}`); }
-      function renderPool() { const pool = currentPool(); const hasFeatured = Boolean(pool.featured); $("eyebrow").textContent = pool.tag; $("stageTitle").textContent = pool.stage; $("stageDesc").textContent = hasFeatured ? `SSR UP · ${pool.featured}` : "SSR 常驻 · 无限定 UP"; $("bannerTitle").textContent = pool.name; $("bannerNote").textContent = hasFeatured ? `每次抽取消耗 160 星尘 · 十连至少获得 1 张 SR · ${pool.featured} 概率提升 · 本卡池保底独立记录` : "每次抽取消耗 160 星尘 · 十连至少获得 1 张 SR · 常驻 SSR 等概率出现 · 本卡池保底独立记录"; stage.dataset.pool = pool.id; Object.entries(poolButtons).forEach(([id, button]) => { const active = id === pool.id; button.classList.toggle("active", active); button.setAttribute("aria-selected", active ? "true" : "false"); }); }
+      function switchPool(poolId) { if (busy || !isPoolId(poolId)) return; state.poolId = poolId; saveState(); render(); showToast(`已切换至 ${pools[poolId].name}`); }
+      function renderPool() { const pool = currentPool(); const hasFeatured = Boolean(pool.featured); $("eyebrow").textContent = pool.tag; $("stageTitle").textContent = pool.stage; $("stageDesc").textContent = hasFeatured ? `SSR UP · ${pool.featured}` : "SSR 常驻 · 无限定 UP"; $("bannerTitle").textContent = pool.name; $("bannerNote").textContent = hasFeatured ? `每次抽取消耗 ${COST} 星尘 · 十连至少获得 1 张 SR · ${pool.featured} 概率提升 · 本卡池保底独立记录` : `每次抽取消耗 ${COST} 星尘 · 十连至少获得 1 张 SR · 常驻 SSR 等概率出现 · 本卡池保底独立记录`; stage.dataset.pool = pool.id; Object.entries(poolButtons).forEach(([id, button]) => { const active = id === pool.id; button.classList.toggle("active", active); button.setAttribute("aria-selected", active ? "true" : "false"); }); }
       function renderCollection() { const entries = catalogEntries(); const found = entries.filter((entry) => state.collection[entry.name]).length; $("collectionCount").textContent = `${found} / ${entries.length} 已发现`; const visible = catalogFilter === "ALL" ? entries : entries.filter((entry) => entry.rarity === catalogFilter); $("catalogGrid").innerHTML = visible.map((entry) => { const collected = !!state.collection[entry.name]; return `<article class="catalog-card ${entry.rarity.toLowerCase()} ${collected ? "collected" : "locked"}"><div class="catalog-top"><span class="catalog-rarity">${entry.rarity}</span><span>${collected ? "已收集" : "未发现"}</span></div><span class="catalog-icon">${collected ? iconFor(entry.name, entry.rarity) : "?"}</span><strong>${collected ? entry.name : "未知星体"}</strong><small>${entry.pool}</small></article>`; }).join(""); }
+      function renderHistory() {
+        const content = $("historyContent");
+        content.replaceChildren();
+        if (!state.history.length) {
+          const empty = document.createElement("div");
+          empty.className = "empty-state";
+          const title = document.createElement("strong");
+          title.textContent = "还没有抽卡记录";
+          empty.append(title, document.createTextNode("点击上方按钮，看看第一颗星会落在哪里。"));
+          content.append(empty);
+          return;
+        }
+        const table = document.createElement("table");
+        table.className = "history-table";
+        const thead = document.createElement("thead");
+        const headerRow = document.createElement("tr");
+        ["时间", "结果", "卡池", "亮点"].forEach((label) => { const cell = document.createElement("th"); cell.textContent = label; headerRow.append(cell); });
+        thead.append(headerRow);
+        const tbody = document.createElement("tbody");
+        state.history.forEach((entry) => {
+          const row = document.createElement("tr");
+          const timeCell = document.createElement("td"); timeCell.textContent = formatTime(entry.time);
+          const resultCell = document.createElement("td"); const chip = document.createElement("span"); chip.className = `result-chip ${entry.rarity.toLowerCase()}`; chip.textContent = entry.summary; resultCell.append(chip);
+          const poolCell = document.createElement("td"); poolCell.textContent = isPoolId(entry.poolId) ? pools[entry.poolId].name : "晨昏棱镜";
+          const highlightCell = document.createElement("td"); highlightCell.textContent = entry.highlight;
+          row.append(timeCell, resultCell, poolCell, highlightCell); tbody.append(row);
+        });
+        table.append(thead, tbody); content.append(table);
+      }
       function render() {
         renderPool();
         const pity = currentPity();
         $("pityValue").textContent = pity;
+        $("pityLimitValue").textContent = PITY_LIMIT;
         $("pityStatus").textContent = pity === 0 ? "本卡池保底计数已重置" : `本卡池距离保底还有 ${PITY_LIMIT - pity} 抽`;
+        $("pityRuleNote").textContent = `第 ${PITY_LIMIT} 抽必出 SSR。${Object.keys(pools).length} 个卡池独立累计，抽到 SSR 后当前卡池保底会立即归零。`;
         $("progressValue").style.width = `${Math.min(100, pity / PITY_LIMIT * 100)}%`;
+        $("progressValue").parentElement.setAttribute("aria-valuemax", PITY_LIMIT);
         $("progressValue").parentElement.setAttribute("aria-valuenow", pity);
         $("totalValue").textContent = state.total;
         $("ssrValue").textContent = state.ssr;
         $("streakValue").textContent = state.bestStreak ? `${state.bestStreak} 张` : "—";
         $("balanceValue").textContent = state.balance.toLocaleString("en-US");
-        const content = $("historyContent");
-        if (!state.history.length) content.innerHTML = `<div class="empty-state"><strong>还没有抽卡记录</strong>点击上方按钮，看看第一颗星会落在哪里。</div>`;
-        else content.innerHTML = `<table class="history-table"><thead><tr><th>时间</th><th>结果</th><th>卡池</th><th>亮点</th></tr></thead><tbody>${state.history.map((entry) => `<tr><td>${formatTime(entry.time)}</td><td><span class="result-chip ${entry.rarity.toLowerCase()}">${entry.summary}</span></td><td>${pools[entry.poolId || "prism"]?.name || "晨昏棱镜"}</td><td>${entry.highlight}</td></tr>`).join("")}</tbody></table>`;
+        $("rechargeBtn").textContent = `＋${RECHARGE_AMOUNT.toLocaleString("en-US")}`;
+        $("rechargeBtn").setAttribute("aria-label", `补充 ${RECHARGE_AMOUNT.toLocaleString("en-US")} 星尘`);
+        renderHistory();
         renderCollection();
       }
       function clearHistory() { if (!state.history.length) { showToast("记录已经是空的"); return; } state.history = []; saveState(); render(); showToast("已清空本地抽卡记录"); }
       singleBtn.addEventListener("click", () => draw(1));
       tenBtn.addEventListener("click", () => draw(10));
       $("clearBtn").addEventListener("click", clearHistory);
-      $("rechargeBtn").addEventListener("click", () => { state.balance += 1600; saveState(); render(); showToast("已补充 1,600 星尘"); });
+      $("rechargeBtn").addEventListener("click", () => { state.balance += RECHARGE_AMOUNT; saveState(); render(); showToast(`已补充 ${RECHARGE_AMOUNT.toLocaleString("en-US")} 星尘`); });
       Object.entries(poolButtons).forEach(([id, button]) => button.addEventListener("click", () => switchPool(id)));
       document.querySelectorAll(".catalog-filter").forEach((button) => button.addEventListener("click", () => { catalogFilter = button.dataset.filter; document.querySelectorAll(".catalog-filter").forEach((item) => { const active = item === button; item.classList.toggle("is-active", active); item.setAttribute("aria-selected", active ? "true" : "false"); }); renderCollection(); }));
       $("closeModal").addEventListener("click", closeModal); $("doneBtn").addEventListener("click", closeModal);
@@ -370,8 +426,8 @@
         const lifecycle = new AbortController();
         const register = (tool) => { try { Promise.resolve(modelContext.registerTool(tool, { signal: lifecycle.signal })).catch(() => {}); } catch {} };
         register({ name: "read_gacha_status", title: "读取抽卡状态", description: "读取当前星尘、卡池、图鉴收集数、累计抽取、当前卡池独立 SSR 保底进度和最近记录。", inputSchema: { type: "object", properties: {}, additionalProperties: false }, annotations: { readOnlyHint: true }, execute: () => ({ balance: state.balance, poolId: state.poolId, poolName: currentPool().name, total: state.total, ssr: state.ssr, pity: currentPity(), pityByPool: { ...state.pityByPool }, pityLimit: PITY_LIMIT, collectionCount: Object.keys(state.collection).length, collectionTotal: catalogEntries().length, recentHistory: state.history.slice(0, 5) }) });
-        register({ name: "select_gacha_pool", title: "切换抽卡池", description: "切换当前抽卡池，并更新可见的卡池标题与抽卡规则。", inputSchema: { type: "object", properties: { poolId: { type: "string", enum: ["prism", "frost", "standard"] } }, required: ["poolId"], additionalProperties: false }, annotations: { readOnlyHint: false }, execute: (input) => { const poolId = String(input && input.poolId); if (!pools[poolId]) throw new Error("未知卡池"); switchPool(poolId); return { poolId, poolName: currentPool().name, featured: currentPool().featured }; } });
-        register({ name: "perform_gacha_draw", title: "执行抽卡", description: "执行一次单抽或十连抽，并返回抽卡结果。仅在用户明确要求抽卡时使用。", inputSchema: { type: "object", properties: { count: { type: "integer", enum: [1, 10] } }, required: ["count"], additionalProperties: false }, annotations: { readOnlyHint: false }, execute: async (input) => { const count = Number(input && input.count); if (![1, 10].includes(count)) throw new Error("count must be 1 or 10"); if (state.balance < COST * count) throw new Error("星尘不足"); const result = []; state.balance -= COST * count; for (let i = 0; i < count; i += 1) result.push(makeCard(rollRarity(), i)); if (count === 10 && !result.some((card) => card.rarity !== "R")) { setCurrentPity(currentPity() - 1); result[result.length - 1] = makeCard("SR", 9); state.total -= 1; } state.history.unshift({ time: Date.now(), count, rarity: result.some((card) => card.rarity === "SSR") ? "SSR" : result.some((card) => card.rarity === "SR") ? "SR" : "R", summary: result.map((card) => card.rarity).join(" · "), highlight: result[0].name, poolId: state.poolId }); state.history = state.history.slice(0, 18); saveState(); render(); showResults(result); return { count, poolId: state.poolId, results: result.map((card) => ({ rarity: card.rarity, name: card.name })), pity: currentPity(), pityByPool: { ...state.pityByPool }, balance: state.balance, collectionCount: Object.keys(state.collection).length }; } });
+        register({ name: "select_gacha_pool", title: "切换抽卡池", description: "切换当前抽卡池，并更新可见的卡池标题与抽卡规则。", inputSchema: { type: "object", properties: { poolId: { type: "string", enum: ["prism", "frost", "standard"] } }, required: ["poolId"], additionalProperties: false }, annotations: { readOnlyHint: false }, execute: (input) => { const poolId = String(input && input.poolId); if (!isPoolId(poolId)) throw new Error("未知卡池"); switchPool(poolId); return { poolId, poolName: currentPool().name, featured: currentPool().featured }; } });
+        register({ name: "perform_gacha_draw", title: "执行抽卡", description: "执行一次单抽或十连抽，并返回抽卡结果。仅在用户明确要求抽卡时使用。", inputSchema: { type: "object", properties: { count: { type: "integer", enum: [1, 10] } }, required: ["count"], additionalProperties: false }, annotations: { readOnlyHint: false }, execute: async (input) => { const count = Number(input && input.count); if (![1, 10].includes(count)) throw new Error("count must be 1 or 10"); if (state.balance < COST * count) throw new Error("星尘不足"); const collectedBefore = new Set(Object.keys(state.collection)); const result = []; state.balance -= COST * count; for (let i = 0; i < count; i += 1) result.push(makeCard(rollRarity(), i)); ensureTenPullGuarantee(result, collectedBefore); const best = bestCard(result); state.history.unshift({ time: Date.now(), count, rarity: best.rarity, summary: result.map((card) => card.rarity).join(" · "), highlight: best.name, poolId: state.poolId }); state.history = state.history.slice(0, 18); saveState(); render(); showResults(result); return { count, poolId: state.poolId, results: result.map((card) => ({ rarity: card.rarity, name: card.name })), pity: currentPity(), pityByPool: { ...state.pityByPool }, balance: state.balance, collectionCount: Object.keys(state.collection).length }; } });
         window.addEventListener("pagehide", () => lifecycle.abort(), { once: true });
       }
       render();
